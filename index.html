@@ -614,12 +614,15 @@ function switchTab(tab) {
   });
   document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
 
-  // [FIX] Charts beim Tab-Wechsel neu rendern (Chart.js 0×0 Bug in hidden Tabs)
-  if (tab === 'pipeline') {
-    renderCharts();
-  } else if (tab === 'monitoring') {
-    renderMonitoringCharts();
-  }
+  // [FIX] requestAnimationFrame gibt dem Browser einen Frame zum Layout
+  // bevor Chart.js die Canvas-Dimensionen misst (sonst 0×0)
+  requestAnimationFrame(() => {
+    if (tab === 'pipeline') {
+      renderCharts();
+    } else if (tab === 'monitoring') {
+      renderMonitoringCharts();
+    }
+  });
 }
 
 function tabKey(e) {
