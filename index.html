@@ -589,16 +589,37 @@ function renderMentionTable() {
 
 function renderMonitoringCharts() {
   const data = filteredMentions;
-  const dc = {};
-  data.forEach(m => { if (m.date) dc[m.date] = (dc[m.date]||0) + 1; });
-  const sd = Object.keys(dc).sort((a,b) => parseDeDate(a)-parseDeDate(b));
+  if (!data || !data.length) return;
 
-  if (charts.mentions) charts.mentions.destroy();
-  charts.mentions = new Chart(document.getElementById('chartMentions'), { type:'line', data:{labels:sd,datasets:[{label:'Mentions',data:sd.map(d=>dc[d]),borderColor:BRAND,backgroundColor:'rgba(154,141,97,.12)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:BRAND}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}} });
+  try {
+    // Mentions-Timeline
+    const dc = {};
+    data.forEach(m => { if (m.date) dc[m.date] = (dc[m.date]||0) + 1; });
+    const sd = Object.keys(dc).sort((a,b) => parseDeDate(a)-parseDeDate(b));
 
-  const top = [...data].sort((a,b)=>b.reach-a.reach).slice(0,5);
-  if (charts.topMentions) charts.topMentions.destroy();
-  charts.topMentions = new Chart(document.getElementById('chartTopMentions'), { type:'bar', data:{labels:top.map(m=>m.account),datasets:[{data:top.map(m=>m.reach),backgroundColor:BRAND,borderRadius:4,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true},y:{grid:{display:false}}}} });
+    const canvasMentions = document.getElementById('chartMentions');
+    if (canvasMentions) {
+      if (charts.mentions) { charts.mentions.destroy(); charts.mentions = null; }
+      charts.mentions = new Chart(canvasMentions, { type:'line', data:{labels:sd,datasets:[{label:'Mentions',data:sd.map(d=>dc[d]),borderColor:BRAND,backgroundColor:'rgba(154,141,97,.12)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:BRAND}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}} });
+    }
+
+    // Top Mentions nach Reichweite
+    const top = [...data].sort((a,b)=>b.reach-a.reach).slice(0,5);
+    const canvasTop = document.getElementById('chartTopMentions');
+    if (canvasTop) {
+      if (charts.topMentions) { charts.topMentions.destroy(); charts.topMentions = null; }
+      charts.topMentions = new Chart(canvasTop, { type:'bar', data:{labels:top.map(m=>m.account),datasets:[{data:top.map(m=>m.reach),backgroundColor:BRAND,borderRadius:4,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true},y:{grid:{display:false}}}} });
+    }
+
+    // Force Chart.js to recalculate dimensions
+    setTimeout(() => {
+      if (charts.mentions) charts.mentions.resize();
+      if (charts.topMentions) charts.topMentions.resize();
+    }, 50);
+
+  } catch(e) {
+    console.error('Chart-Rendering Fehler:', e);
+  }
 }
 
 /* ───────────────────────────────────────────────
@@ -614,15 +635,16 @@ function switchTab(tab) {
   });
   document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
 
-  // [FIX] requestAnimationFrame gibt dem Browser einen Frame zum Layout
+  // [FIX] setTimeout gibt dem Browser genug Zeit zum Layout
   // bevor Chart.js die Canvas-Dimensionen misst (sonst 0×0)
-  requestAnimationFrame(() => {
+  setTimeout(() => {
     if (tab === 'pipeline') {
       renderCharts();
     } else if (tab === 'monitoring') {
       renderMonitoringCharts();
     }
-  });
+    window.dispatchEvent(new Event('resize'));
+  }, 100);
 }
 
 function tabKey(e) {
