@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Don Carne Influencer Management Dashboard">
+<meta name="theme-color" content="#1C1C1C">
+<title>Don Carne · Influencer Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.7/chart.umd.min.js"></script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%239A8D61'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='48' font-weight='bold' font-family='sans-serif'>DC</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+:root{
+  --brand:#9A8D61;--brand-light:#B5A97A;--brand-dark:#7A6F4D;--brand-bg:rgba(154,141,97,.1);
+  --dark:#1C1C1C;
+  --bg:#F7F6F3;--white:#FFFFFF;
+  --gray-100:#F2F1EE;--gray-200:#E5E4E0;--gray-300:#D1D0CC;--gray-400:#9E9D99;--gray-500:#6B6A66;
+  --green:#27AE60;--green-bg:rgba(39,174,96,.1);
+  --amber:#F39C12;--amber-bg:rgba(243,156,18,.1);
+  --blue:#2980B9;--blue-bg:rgba(41,128,185,.1);
+  --red:#C0392B;
+  --font:'DM Sans',sans-serif;--mono:'Space Mono',monospace;
+  --radius:10px;--radius-lg:14px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+}
+body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:100vh}
+
+.header{background:var(--dark);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-brand{display:flex;align-items:center;gap:14px}
+.header-logo{width:36px;height:36px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:15px;letter-spacing:-.5px}
+.header h1{color:#fff;font-size:18px;font-weight:600;letter-spacing:-.3px}
+.header h1 span{color:var(--brand-light);font-weight:400}
+.header-meta{color:var(--gray-400);font-size:12px;font-family:var(--mono)}
+.header-actions{display:flex;gap:10px}
+.btn-refresh{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;padding:8px 16px;border-radius:var(--radius);font-size:13px;cursor:pointer;font-family:var(--font);transition:.2s}
+.btn-refresh:hover{background:rgba(255,255,255,.15)}
+.btn-refresh:disabled{opacity:.5;cursor:not-allowed}
+
+.kpi-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:20px 32px;background:var(--white);border-bottom:1px solid var(--gray-200)}
+.kpi-card{padding:14px 16px;border-radius:var(--radius);background:var(--gray-100)}
+.kpi-label{font-size:11px;font-weight:500;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-value{font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--gray-400);margin-top:4px;font-family:var(--mono)}
+.kpi-card.accent{background:var(--brand-bg)}
+.kpi-card.accent .kpi-value{color:var(--brand-dark)}
+.kpi-card.green .kpi-value{color:var(--green)}
+.kpi-card.blue .kpi-value{color:var(--blue)}
+
+.tabs{display:flex;padding:0 32px;background:var(--white);border-bottom:1px solid var(--gray-200)}
+.tab{padding:14px 24px;font-size:14px;font-weight:500;color:var(--gray-500);cursor:pointer;border-bottom:2px solid transparent;transition:.2s}
+.tab:hover{color:var(--dark)}
+.tab:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+.tab.active{color:var(--dark);border-bottom-color:var(--brand)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.filter-bar{padding:16px 32px;background:var(--white);border-bottom:1px solid var(--gray-200)}
+.filter-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.filter-select{padding:8px 12px;font-size:13px;font-family:var(--font);border:1px solid var(--gray-200);border-radius:var(--radius);background:var(--white);color:var(--dark);cursor:pointer;min-width:130px;transition:.2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%239E9D99' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.filter-select:hover{border-color:var(--gray-300)}
+.filter-select:focus{outline:none;border-color:var(--brand)}
+.filter-select:focus-visible{box-shadow:0 0 0 2px var(--brand-bg)}
+.filter-search{flex:1;min-width:180px;padding:8px 12px;font-size:13px;font-family:var(--font);border:1px solid var(--gray-200);border-radius:var(--radius);transition:.2s}
+.filter-search:focus{outline:none;border-color:var(--brand)}
+.filter-search:focus-visible{box-shadow:0 0 0 2px var(--brand-bg)}
+.btn-reset{padding:8px 16px;font-size:12px;font-family:var(--font);font-weight:500;color:var(--gray-500);background:none;border:1px solid var(--gray-200);border-radius:var(--radius);cursor:pointer;transition:.2s;white-space:nowrap}
+.btn-reset:hover{border-color:var(--brand);color:var(--brand-dark)}
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center;min-height:0}
+.active-filters:empty{margin:0}
+.filter-tag{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500}
+.filter-tag.platform{background:var(--blue-bg);color:var(--blue)}
+.filter-tag.score{background:var(--green-bg);color:var(--green)}
+.filter-tag.status{background:var(--amber-bg);color:var(--amber)}
+.filter-tag.niche{background:var(--brand-bg);color:var(--brand-dark)}
+.filter-tag.region{background:rgba(149,117,205,.12);color:#7E57C2}
+.filter-tag.search{background:var(--gray-100);color:var(--gray-500)}
+.filter-tag.follower{background:rgba(142,68,173,.1);color:#8E44AD}
+.filter-count{font-size:12px;color:var(--gray-400);font-style:italic}
+
+.charts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:20px 32px}
+.chart-card{background:var(--white);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow)}
+.chart-title{font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.chart-wrap{position:relative;height:180px}
+
+.cards-header{padding:16px 32px 8px;display:flex;justify-content:space-between;align-items:center}
+.cards-count{font-size:13px;color:var(--gray-500)}
+.sort-select{padding:6px 10px;font-size:12px;font-family:var(--font);border:1px solid var(--gray-200);border-radius:var(--radius);background:var(--white);cursor:pointer}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;padding:8px 32px 32px}
+.card{background:var(--white);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden;transition:box-shadow .2s,border-color .2s;border:1px solid transparent}
+.card:hover{box-shadow:var(--shadow-md);border-color:var(--gray-200)}
+.card-header{padding:16px 18px 12px;display:flex;justify-content:space-between;align-items:flex-start}
+.card-user{display:flex;align-items:center;gap:10px}
+.card-avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff}
+.card-avatar.ig{background:linear-gradient(135deg,#833AB4,#E1306C,#F77737)}
+.card-avatar.tt{background:#000}
+.card-username{font-size:14px;font-weight:600}
+.card-username a{color:var(--dark);text-decoration:none;transition:color .15s}
+.card-username a:hover{color:var(--brand)}
+.card-platform{font-size:11px;color:var(--gray-400);font-family:var(--mono)}
+.score-badge{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff}
+.score-high{background:var(--green)}
+.score-mid{background:var(--amber)}
+.score-low{background:var(--red)}
+.card-body{padding:0 18px 14px}
+.card-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tag{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
+.tag-niche{background:var(--brand-bg);color:var(--brand-dark)}
+.tag-region{background:rgba(149,117,205,.12);color:#7E57C2}
+.tag-followers{background:var(--blue-bg);color:var(--blue)}
+.card-reasoning{font-size:12px;color:var(--gray-500);line-height:1.5;max-height:200px;overflow:hidden;transition:max-height .3s ease,margin .3s ease,padding .3s ease;margin-bottom:10px;padding-top:4px}
+.card-reasoning.collapsed{max-height:0;margin-bottom:0;padding-top:0}
+.toggle-reasoning{font-size:11px;color:var(--gray-400);cursor:pointer;margin-bottom:6px;display:inline-block;transition:color .15s}
+.toggle-reasoning:hover{color:var(--dark)}
+.card-footer{padding:10px 18px 14px;border-top:1px solid var(--gray-100);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.status-select{padding:5px 8px;font-size:12px;font-family:var(--font);border:1px solid var(--gray-200);border-radius:6px;background:var(--white);cursor:pointer;font-weight:500;transition:border-color .15s}
+.status-select:focus{outline:none;border-color:var(--brand)}
+.status-select:focus-visible{box-shadow:0 0 0 2px var(--brand-bg)}
+.status-offen{border-left:3px solid var(--blue)}
+.status-kontaktiert{border-left:3px solid var(--amber)}
+.status-abgelehnt{border-left:3px solid var(--red)}
+.status-kooperation{border-left:3px solid var(--green)}
+.btn-dm{padding:5px 12px;font-size:12px;font-family:var(--font);font-weight:500;color:var(--brand-dark);background:var(--brand-bg);border:none;border-radius:6px;cursor:pointer;transition:all .15s}
+.btn-dm:hover{background:var(--brand);color:#fff}
+.btn-dm.copied{background:var(--green);color:#fff}
+.card-note{flex:1;min-width:120px}
+.card-note input{width:100%;padding:5px 8px;font-size:11px;font-family:var(--font);border:1px solid var(--gray-200);border-radius:6px;color:var(--dark);transition:border-color .15s}
+.card-note input:focus{outline:none;border-color:var(--brand)}
+.card-note input:focus-visible{box-shadow:0 0 0 2px var(--brand-bg)}
+.card-date{font-size:11px;color:var(--gray-400);font-family:var(--mono);margin-left:auto}
+
+.monitoring-header{padding:20px 32px 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.monitoring-charts{display:grid;grid-template-columns:2fr 1fr;gap:16px;padding:0 32px 16px}
+.mention-list{padding:0 32px 32px;overflow-x:auto}
+.mention-table{width:100%;min-width:900px;border-collapse:collapse;background:var(--white);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow)}
+.mention-table th{background:var(--dark);color:#fff;padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;text-align:left}
+.mention-table td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--gray-100)}
+.mention-table tr:hover td{background:var(--gray-100)}
+.mention-table a{color:var(--blue);text-decoration:none;font-size:12px}
+.mention-table a:hover{text-decoration:underline}
+.pipeline-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+.pipeline-badge.yes{background:var(--green-bg);color:var(--green)}
+.pipeline-badge.no{background:var(--gray-100);color:var(--gray-400)}
+
+.loading{text-align:center;padding:60px;color:var(--gray-400);font-size:14px}
+.loading-spinner{width:32px;height:32px;border:3px solid var(--gray-200);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:60px;color:var(--gray-400)}
+
+.toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:var(--radius);font-size:13px;font-family:var(--font);color:#fff;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s ease;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+.toast.info{background:var(--brand)}
+
+@media(max-width:1024px){
+  .kpi-bar{grid-template-columns:repeat(3,1fr)}
+  .charts-grid{grid-template-columns:repeat(2,1fr)}
+  .monitoring-charts{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  .kpi-bar{grid-template-columns:repeat(2,1fr);padding:12px 16px;gap:8px}
+  .charts-grid,.cards-grid{padding:12px 16px}
+  .filter-bar,.cards-header,.monitoring-header,.mention-list{padding-left:16px;padding-right:16px}
+  .header{padding:14px 16px}
+  .tabs{padding:0 16px}
+  .cards-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .kpi-bar{grid-template-columns:1fr}
+  .charts-grid{grid-template-columns:1fr}
+  .header h1{font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">
+    <div class="header-logo">DC</div>
+    <div>
+      <h1>Influencer Dashboard <span>· Don Carne</span></h1>
+      <div class="header-meta" id="lastUpdate">Laden...</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-refresh" onclick="loadAllData()">↻ Daten aktualisieren</button>
+  </div>
+</header>
+
+<div class="kpi-bar">
+  <div class="kpi-card"><div class="kpi-label">Influencer gesamt</div><div class="kpi-value" id="kpiTotal">–</div><div class="kpi-sub" id="kpiTotalSub"></div></div>
+  <div class="kpi-card accent"><div class="kpi-label">Ø Score</div><div class="kpi-value" id="kpiScore">–</div><div class="kpi-sub">Bewertung 1–10</div></div>
+  <div class="kpi-card green"><div class="kpi-label">Kontaktiert</div><div class="kpi-value" id="kpiContacted">–</div><div class="kpi-sub" id="kpiContactedSub"></div></div>
+  <div class="kpi-card"><div class="kpi-label">Kooperationen</div><div class="kpi-value" id="kpiCoops">–</div><div class="kpi-sub">aktiv</div></div>
+  <div class="kpi-card blue"><div class="kpi-label">Neue diese Woche</div><div class="kpi-value" id="kpiNew">–</div><div class="kpi-sub" id="kpiNewSub"></div></div>
+  <div class="kpi-card"><div class="kpi-label">Brand Mentions</div><div class="kpi-value" id="kpiMentions">–</div><div class="kpi-sub">diesen Monat</div></div>
+</div>
+
+<div class="tabs" role="tablist">
+  <div class="tab active" role="tab" tabindex="0" aria-selected="true" data-tab="pipeline" onclick="switchTab('pipeline')" onkeydown="tabKey(event)">Influencer Pipeline</div>
+  <div class="tab" role="tab" tabindex="-1" aria-selected="false" data-tab="monitoring" onclick="switchTab('monitoring')" onkeydown="tabKey(event)">Brand Monitoring</div>
+</div>
+
+<main>
+<div class="tab-content active" id="tab-pipeline" role="tabpanel">
+  <div class="filter-bar">
+    <div class="filter-row">
+      <select class="filter-select" id="filterPlatform" aria-label="Filter nach Plattform" onchange="applyFilters()"><option value="">Plattform</option><option>Instagram</option><option>TikTok</option></select>
+      <select class="filter-select" id="filterScore" aria-label="Filter nach Score" onchange="applyFilters()"><option value="">Score</option><option value="8-10">Top-Picks (8–10)</option><option value="6-7">Gut (6–7)</option><option value="1-5">Niedrig (1–5)</option></select>
+      <select class="filter-select" id="filterFollower" aria-label="Filter nach Follower" onchange="applyFilters()"><option value="">Follower</option><option value="5000-10000">Micro (5–10k)</option><option value="10000-50000">Mid (10–50k)</option><option value="50000-9999999">Macro (50k+)</option></select>
+      <select class="filter-select" id="filterStatus" aria-label="Filter nach Status" onchange="applyFilters()"><option value="">Status</option><option>offen</option><option>kontaktiert</option><option>abgelehnt</option><option>Kooperation</option></select>
+      <select class="filter-select" id="filterNiche" aria-label="Filter nach Nische" onchange="applyFilters()"><option value="">Nische</option></select>
+      <select class="filter-select" id="filterRegion" aria-label="Filter nach Region" onchange="applyFilters()"><option value="">Region</option></select>
+      <input type="text" class="filter-search" id="filterSearch" aria-label="Freitextsuche" placeholder="Suche nach Username oder Keyword..." oninput="debouncedFilter()">
+      <button class="btn-reset" onclick="resetFilters()">Filter zurücksetzen</button>
+    </div>
+    <div class="active-filters" id="activeFilters"></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">Score-Verteilung</div><div class="chart-wrap"><canvas id="chartScore"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Plattform-Split</div><div class="chart-wrap"><canvas id="chartPlatform"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Status-Übersicht</div><div class="chart-wrap"><canvas id="chartStatus"></canvas></div></div>
+  </div>
+
+  <div class="cards-header">
+    <div class="cards-count" id="cardsCount">Laden...</div>
+    <select class="sort-select" id="sortSelect" aria-label="Sortierung" onchange="applyFilters()">
+      <option value="score-desc">Score ↓</option>
+      <option value="score-asc">Score ↑</option>
+      <option value="followers-desc">Follower ↓</option>
+      <option value="date-desc">Datum ↓</option>
+    </select>
+  </div>
+  <div class="cards-grid" id="cardsGrid"><div class="loading"><div class="loading-spinner"></div>Daten werden geladen...</div></div>
+</div>
+
+<div class="tab-content" id="tab-monitoring" role="tabpanel">
+  <div class="monitoring-header">
+    <select class="filter-select" id="monitorPlatform" aria-label="Filter nach Plattform" onchange="applyMonitorFilters()"><option value="">Plattform</option><option>Instagram</option><option>TikTok</option><option>Web</option></select>
+    <select class="filter-select" id="monitorTime" aria-label="Filter nach Zeitraum" onchange="applyMonitorFilters()"><option value="">Zeitraum</option><option value="7">Letzte 7 Tage</option><option value="30">Letzte 30 Tage</option></select>
+    <input type="text" class="filter-search" id="monitorSearch" aria-label="Account suchen" placeholder="Account suchen..." style="max-width:220px" oninput="debouncedMonitorFilter()">
+  </div>
+  <div class="monitoring-charts">
+    <div class="chart-card"><div class="chart-title">Mentions-Timeline</div><div class="chart-wrap"><canvas id="chartMentions"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Top Mentions nach Reichweite</div><div class="chart-wrap"><canvas id="chartTopMentions"></canvas></div></div>
+  </div>
+  <div class="mention-list">
+    <table class="mention-table">
+      <thead><tr><th>Account</th><th>Plattform</th><th>Follower</th><th>Typ</th><th>Hashtags</th><th>Views/Likes</th><th>Reichweite</th><th>Datum</th><th>Link</th><th>Pipeline?</th></tr></thead>
+      <tbody id="mentionBody"><tr><td colspan="10" class="loading"><div class="loading-spinner"></div>Laden...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ───────────────────────────────────────────────
+   KONFIGURATION – Google Sheets API Key eintragen
+   ─────────────────────────────────────────────── */
+const CONFIG = {
+  SHEET_ID: '1gK7wnOdK4MPcoKYhmVOMeuPsjtz2VDg6EJnLk8QOy2k',
+  API_KEY: 'HIER_DEINEN_API_KEY_EINTRAGEN',
+  TAB_PIPELINE: 'Influencer Pipeline',
+  TAB_MONITORING: 'Brand Monitoring'
+};
+
+/* ───────────────────────────────────────────────
+   STATE
+   ─────────────────────────────────────────────── */
+let allInfluencers = [], allMentions = [], filteredInfluencers = [], filteredMentions = [];
+const charts = {};
+let currentTab = 'pipeline';          // [FIX] Tab-Tracking für Chart.js 0×0 Bug
+let _debounceTimer = null;
+let _debounceTimerMon = null;
+const BRAND = '#9A8D61';
+const _escEl = document.createElement('div');
+
+/* ───────────────────────────────────────────────
+   HILFSFUNKTIONEN
+   ─────────────────────────────────────────────── */
+function esc(s) { _escEl.textContent = s; return _escEl.innerHTML.replace(/"/g, '&quot;'); }
+
+// [FIX] safeInt – verhindert -1 Sentinel-Werte in Charts
+function safeInt(val) {
+  const n = parseInt(val, 10);
+  return (isNaN(n) || n < 0) ? 0 : n;
+}
+
+function fmtNum(n) {
+  if (n === null || n === undefined || n === '' || isNaN(n)) return '–';
+  if (n === 0) return '0';
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'k';
+  return String(n);
+}
+
+function parseDeDate(s) {
+  if (!s) return new Date(0);
+  const p = s.split('.');
+  return p.length === 3 ? new Date(p[2], p[1] - 1, p[0]) : new Date(0);
+}
+
+function isThisWeek(s) {
+  if (!s) return false;
+  const d = parseDeDate(s), now = new Date(), mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  mon.setHours(0, 0, 0, 0);
+  return d >= mon;
+}
+
+function getKW(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(), 0, 1))) / 86400000) + 1) / 7);
+}
+
+let _toastTimer = null;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  clearTimeout(_toastTimer);
+  t.classList.remove('show');
+  requestAnimationFrame(() => {
+    t.textContent = msg;
+    t.className = 'toast ' + (type || 'info');
+    requestAnimationFrame(() => t.classList.add('show'));
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  });
+}
+
+function debouncedFilter() {
+  clearTimeout(_debounceTimer);
+  _debounceTimer = setTimeout(applyFilters, 250);
+}
+
+function debouncedMonitorFilter() {
+  clearTimeout(_debounceTimerMon);
+  _debounceTimerMon = setTimeout(applyMonitorFilters, 250);
+}
+
+function statusCls(s) {
+  return { offen: 'status-offen', kontaktiert: 'status-kontaktiert', abgelehnt: 'status-abgelehnt', Kooperation: 'status-kooperation' }[s] || '';
+}
+
+/* ───────────────────────────────────────────────
+   DATEN LADEN
+   ─────────────────────────────────────────────── */
+async function fetchSheet(tab) {
+  const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${encodeURIComponent(tab)}?key=${CONFIG.API_KEY}`);
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e?.error?.message || 'HTTP ' + r.status); }
+  const d = await r.json();
+  if (!d.values || d.values.length < 2) return [];
+  const h = d.values[0];
+  return d.values.slice(1).map(row => { const o = {}; h.forEach((k, i) => o[k] = row[i] || ''); return o; });
+}
+
+function parseInf(r) {
+  return {
+    username: r.username || r.Benutzername || '',
+    platform: r.platform || r.Plattform || '',
+    followers: safeInt(r.followers || r.Follower || '0'),
+    niche: r.niche || r.Nische || '',
+    location: r.location || r.Standort || '',
+    score: safeInt(r.score || r.Score || '0'),
+    reasoning: r.begruendung || r['Begründung'] || '',
+    dm: r.dm_vorlage || r['DM-Vorlage'] || '',
+    status: r.status || r.Status || 'offen',
+    date: r.datum || r.Datum || '',
+    notes: r.notizen || r.Notizen || ''
+  };
+}
+
+function parseMon(r) {
+  return {
+    account: r.account || r.Account || '',
+    platform: r.platform || r.Plattform || '',
+    followers: safeInt(r.followers || r.Follower || '0'),
+    postType: r.post_type || r['Post-Typ'] || '',
+    hashtags: r.hashtags || r.Hashtags || '',
+    likes: safeInt(r.likes || r['Views/Likes'] || '0'),
+    reach: safeInt(r.reichweite || r.Reichweite || '0'),
+    date: r.datum || r.Datum || '',
+    link: r.link || r.Link || '',
+    inPipeline: (r.in_pipeline || r['In Pipeline?'] || '').toLowerCase()
+  };
+}
+
+async function loadAllData() {
+  const btn = document.querySelector('.btn-refresh');
+  btn.textContent = '⟳ Laden...';
+  btn.disabled = true;
+  try {
+    const [ri, rm] = await Promise.all([fetchSheet(CONFIG.TAB_PIPELINE), fetchSheet(CONFIG.TAB_MONITORING)]);
+    allInfluencers = ri.map(parseInf);
+    allMentions = rm.map(parseMon);
+    populateFilters();
+    updateKPIs();
+    applyFilters();
+    applyMonitorFilters();
+    // [FIX] Nur Charts für den sichtbaren Tab rendern (Chart.js 0×0 Bug)
+    if (currentTab === 'pipeline') {
+      renderCharts();
+    } else {
+      renderMonitoringCharts();
+    }
+    document.getElementById('lastUpdate').textContent = 'Aktualisiert: ' + new Date().toLocaleString('de-DE');
+    showToast(allInfluencers.length + ' Influencer · ' + allMentions.length + ' Mentions geladen', 'success');
+  } catch (e) {
+    console.error(e);
+    document.getElementById('cardsGrid').innerHTML = '<div class="empty-state">Fehler beim Laden.<br><br><small style="color:var(--red)">' + esc(e.message) + '</small><br><small>Prüfe API Key und Sheet-Freigabe.</small></div>';
+    showToast('Fehler: ' + e.message, 'error');
+  } finally {
+    btn.textContent = '↻ Daten aktualisieren';
+    btn.disabled = false;
+  }
+}
+
+/* ───────────────────────────────────────────────
+   FILTER & KPIs
+   ─────────────────────────────────────────────── */
+function populateFilters() {
+  const niches = [...new Set(allInfluencers.map(i => i.niche).filter(Boolean))].sort();
+  const regions = [...new Set(allInfluencers.map(i => { const p = i.location.split(','); return (p.length > 1 ? p[p.length-1] : p[0]).trim(); }).filter(Boolean))].sort();
+  document.getElementById('filterNiche').innerHTML = '<option value="">Nische</option>' + niches.map(n => '<option>' + esc(n) + '</option>').join('');
+  document.getElementById('filterRegion').innerHTML = '<option value="">Region</option>' + regions.map(r => '<option>' + esc(r) + '</option>').join('');
+}
+
+function updateKPIs() {
+  const t = allInfluencers.length;
+  const avg = t > 0 ? (allInfluencers.reduce((s, i) => s + i.score, 0) / t).toFixed(1) : '–';
+  const con = allInfluencers.filter(i => i.status === 'kontaktiert').length;
+  const coo = allInfluencers.filter(i => i.status === 'Kooperation').length;
+  const nw = allInfluencers.filter(i => isThisWeek(i.date)).length;
+  document.getElementById('kpiTotal').textContent = t;
+  document.getElementById('kpiTotalSub').textContent = allInfluencers.filter(i => i.platform === 'Instagram').length + ' IG · ' + allInfluencers.filter(i => i.platform === 'TikTok').length + ' TT';
+  document.getElementById('kpiScore').textContent = avg;
+  document.getElementById('kpiContacted').textContent = con;
+  document.getElementById('kpiContactedSub').textContent = t > 0 ? Math.round(con / t * 100) + '% aller Profile' : '';
+  document.getElementById('kpiCoops').textContent = coo;
+  document.getElementById('kpiNew').textContent = nw;
+  document.getElementById('kpiNewSub').textContent = 'KW ' + getKW(new Date());
+  document.getElementById('kpiMentions').textContent = allMentions.length;
+}
+
+function applyFilters() {
+  const f = { platform: document.getElementById('filterPlatform').value, score: document.getElementById('filterScore').value, follower: document.getElementById('filterFollower').value, status: document.getElementById('filterStatus').value, niche: document.getElementById('filterNiche').value, region: document.getElementById('filterRegion').value, search: document.getElementById('filterSearch').value.toLowerCase().trim() };
+  const sort = document.getElementById('sortSelect').value;
+
+  filteredInfluencers = allInfluencers.filter(i => {
+    if (f.platform && i.platform !== f.platform) return false;
+    if (f.score) { const [a, b] = f.score.split('-').map(Number); if (i.score < a || i.score > b) return false; }
+    if (f.follower) { const [a, b] = f.follower.split('-').map(Number); if (i.followers < a || i.followers > b) return false; }
+    if (f.status && i.status !== f.status) return false;
+    if (f.niche && i.niche !== f.niche) return false;
+    if (f.region && !i.location.includes(f.region)) return false;
+    if (f.search && !i.username.toLowerCase().includes(f.search) && !i.reasoning.toLowerCase().includes(f.search) && !i.niche.toLowerCase().includes(f.search)) return false;
+    return true;
+  });
+
+  filteredInfluencers.sort((a, b) => {
+    if (sort === 'score-desc') return b.score - a.score;
+    if (sort === 'score-asc') return a.score - b.score;
+    if (sort === 'followers-desc') return b.followers - a.followers;
+    return parseDeDate(b.date) - parseDeDate(a.date);
+  });
+
+  renderCards();
+  renderActiveTags(f);
+}
+
+function resetFilters() {
+  ['filterPlatform','filterScore','filterFollower','filterStatus','filterNiche','filterRegion'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('filterSearch').value = '';
+  applyFilters();
+}
+
+function renderActiveTags(f) {
+  const c = document.getElementById('activeFilters');
+  const t = [], lbl = { '8-10':'Top-Picks 8–10','6-7':'Gut 6–7','1-5':'Niedrig 1–5','5000-10000':'Micro','10000-50000':'Mid','50000-9999999':'Macro' };
+  if (f.platform) t.push('<span class="filter-tag platform">' + esc(f.platform) + '</span>');
+  if (f.score) t.push('<span class="filter-tag score">' + (lbl[f.score]||f.score) + '</span>');
+  if (f.follower) t.push('<span class="filter-tag follower">' + (lbl[f.follower]||f.follower) + '</span>');
+  if (f.status) t.push('<span class="filter-tag status">' + esc(f.status) + '</span>');
+  if (f.niche) t.push('<span class="filter-tag niche">' + esc(f.niche) + '</span>');
+  if (f.region) t.push('<span class="filter-tag region">' + esc(f.region) + '</span>');
+  if (f.search) t.push('<span class="filter-tag search">"' + esc(f.search) + '"</span>');
+  if (t.length) t.push('<span class="filter-count">' + t.length + ' Filter · ' + filteredInfluencers.length + ' Ergebnisse</span>');
+  c.innerHTML = t.join('');
+}
+
+/* ───────────────────────────────────────────────
+   KARTEN RENDERN
+   ─────────────────────────────────────────────── */
+function renderCards() {
+  const g = document.getElementById('cardsGrid');
+  document.getElementById('cardsCount').textContent = filteredInfluencers.length + ' von ' + allInfluencers.length + ' Influencern';
+  if (!filteredInfluencers.length) { g.innerHTML = '<div class="empty-state">Keine Influencer gefunden. Passe die Filter an.</div>'; return; }
+
+  g.innerHTML = filteredInfluencers.map((inf, i) => {
+    const ig = inf.platform === 'Instagram';
+    const url = ig ? 'https://instagram.com/' + encodeURIComponent(inf.username) : 'https://tiktok.com/@' + encodeURIComponent(inf.username);
+    const sc = inf.score >= 8 ? 'score-high' : inf.score >= 6 ? 'score-mid' : 'score-low';
+    return '<div class="card"><div class="card-header"><div class="card-user"><div class="card-avatar ' + (ig?'ig':'tt') + '">' + (ig?'IG':'TT') + '</div><div><div class="card-username"><a href="' + url + '" target="_blank" rel="noopener">' + esc(inf.username) + '</a></div><div class="card-platform">' + esc(inf.platform) + ' · ' + fmtNum(inf.followers) + ' Follower</div></div></div><div class="score-badge ' + sc + '">' + inf.score + '</div></div><div class="card-body"><div class="card-tags"><span class="tag tag-niche">' + esc(inf.niche) + '</span>' + (inf.location ? '<span class="tag tag-region">' + esc(inf.location) + '</span>' : '') + '<span class="tag tag-followers">' + fmtNum(inf.followers) + '</span></div><div class="toggle-reasoning" onclick="toggleR(this)">▸ Begründung anzeigen</div><div class="card-reasoning collapsed">' + esc(inf.reasoning) + '</div></div><div class="card-footer"><select class="status-select ' + statusCls(inf.status) + '" data-idx="' + i + '" onchange="setStatus(this)"><option' + (inf.status==='offen'?' selected':'') + '>offen</option><option' + (inf.status==='kontaktiert'?' selected':'') + '>kontaktiert</option><option' + (inf.status==='abgelehnt'?' selected':'') + '>abgelehnt</option><option' + (inf.status==='Kooperation'?' selected':'') + '>Kooperation</option></select><button class="btn-dm" data-idx="' + i + '" onclick="copyDM(this)">DM kopieren</button><div class="card-note"><input type="text" placeholder="Notiz..." value="' + esc(inf.notes) + '"></div><div class="card-date">' + esc(inf.date) + '</div></div></div>';
+  }).join('');
+}
+
+function toggleR(el) {
+  const r = el.nextElementSibling, o = !r.classList.contains('collapsed');
+  r.classList.toggle('collapsed');
+  el.textContent = o ? '▸ Begründung anzeigen' : '▾ Begründung verbergen';
+}
+
+function copyDM(btn) {
+  const dm = filteredInfluencers[parseInt(btn.dataset.idx, 10)]?.dm || '';
+  if (!dm) { showToast('Keine DM-Vorlage vorhanden', 'error'); return; }
+  navigator.clipboard.writeText(dm).then(() => {
+    btn.textContent = '✓ Kopiert!'; btn.classList.add('copied');
+    showToast('DM-Vorlage kopiert', 'success');
+    setTimeout(() => { btn.textContent = 'DM kopieren'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => showToast('Kopieren fehlgeschlagen', 'error'));
+}
+
+function setStatus(sel) {
+  const idx = parseInt(sel.dataset.idx, 10), v = sel.value;
+  const inf = filteredInfluencers[idx];
+  inf.status = v;
+  const original = allInfluencers.find(i => i.username === inf.username && i.platform === inf.platform);
+  if (original) original.status = v;
+  sel.className = 'status-select ' + statusCls(v);
+  updateKPIs();
+  // [FIX] Nur Pipeline-Charts neu rendern wenn Pipeline-Tab aktiv
+  if (currentTab === 'pipeline') {
+    renderCharts();
+  }
+  showToast(inf.username + ' → ' + v, 'info');
+}
+
+/* ───────────────────────────────────────────────
+   CHARTS – PIPELINE
+   ─────────────────────────────────────────────── */
+function renderCharts() {
+  const sc = Array(10).fill(0);
+  allInfluencers.forEach(i => { if (i.score >= 1 && i.score <= 10) sc[i.score-1]++; });
+  if (charts.score) charts.score.destroy();
+  charts.score = new Chart(document.getElementById('chartScore'), { type:'bar', data:{ labels:['1','2','3','4','5','6','7','8','9','10'], datasets:[{data:sc,backgroundColor:sc.map((_,i)=>i>=7?'#27AE60':i>=5?'#F39C12':'#C0392B'),borderRadius:4,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}} });
+
+  const ig = allInfluencers.filter(i=>i.platform==='Instagram').length, tt = allInfluencers.filter(i=>i.platform==='TikTok').length;
+  if (charts.platform) charts.platform.destroy();
+  charts.platform = new Chart(document.getElementById('chartPlatform'), { type:'doughnut', data:{labels:['Instagram','TikTok'],datasets:[{data:[ig,tt],backgroundColor:['#E1306C','#1C1C1C'],borderWidth:0}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:16,font:{size:12}}}},cutout:'65%'} });
+
+  const stc = {};
+  allInfluencers.forEach(i => { stc[i.status] = (stc[i.status]||0) + 1; });
+  const stColors = {offen:'#2980B9',kontaktiert:'#F39C12',abgelehnt:'#C0392B',Kooperation:'#27AE60'};
+  if (charts.status) charts.status.destroy();
+  charts.status = new Chart(document.getElementById('chartStatus'), { type:'doughnut', data:{labels:Object.keys(stc),datasets:[{data:Object.values(stc),backgroundColor:Object.keys(stc).map(s=>stColors[s]||'#9E9D99'),borderWidth:0}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:16,font:{size:12}}}},cutout:'65%'} });
+}
+
+/* ───────────────────────────────────────────────
+   BRAND MONITORING
+   ─────────────────────────────────────────────── */
+function applyMonitorFilters() {
+  const p = document.getElementById('monitorPlatform').value, d = document.getElementById('monitorTime').value, s = document.getElementById('monitorSearch').value.toLowerCase().trim();
+  filteredMentions = allMentions.filter(m => {
+    if (p && m.platform !== p) return false;
+    if (d) { const c = new Date(); c.setDate(c.getDate()-parseInt(d, 10)); if (parseDeDate(m.date)<c) return false; }
+    if (s && !m.account.toLowerCase().includes(s)) return false;
+    return true;
+  });
+  renderMentionTable();
+  // [FIX] Nur Monitoring-Charts rendern wenn Monitoring-Tab aktiv
+  if (currentTab === 'monitoring') {
+    renderMonitoringCharts();
+  }
+}
+
+function renderMentionTable() {
+  const tb = document.getElementById('mentionBody');
+  if (!filteredMentions.length) { tb.innerHTML = '<tr><td colspan="10" class="empty-state">Keine Mentions gefunden.</td></tr>'; return; }
+  tb.innerHTML = filteredMentions.map(m => '<tr><td><strong>' + esc(m.account) + '</strong></td><td>' + esc(m.platform) + '</td><td>' + fmtNum(m.followers) + '</td><td>' + esc(m.postType) + '</td><td style="font-size:11px;color:var(--gray-500)">' + esc(m.hashtags) + '</td><td>' + fmtNum(m.likes) + '</td><td><strong>' + fmtNum(m.reach) + '</strong></td><td>' + esc(m.date) + '</td><td>' + (m.link ? '<a href="' + esc(m.link) + '" target="_blank" rel="noopener">Öffnen ↗</a>' : '–') + '</td><td><span class="pipeline-badge ' + (m.inPipeline==='ja'?'yes':'no') + '">' + (m.inPipeline==='ja'?'Ja':'Nein') + '</span></td></tr>').join('');
+}
+
+function renderMonitoringCharts() {
+  const data = filteredMentions;
+  const dc = {};
+  data.forEach(m => { if (m.date) dc[m.date] = (dc[m.date]||0) + 1; });
+  const sd = Object.keys(dc).sort((a,b) => parseDeDate(a)-parseDeDate(b));
+
+  if (charts.mentions) charts.mentions.destroy();
+  charts.mentions = new Chart(document.getElementById('chartMentions'), { type:'line', data:{labels:sd,datasets:[{label:'Mentions',data:sd.map(d=>dc[d]),borderColor:BRAND,backgroundColor:'rgba(154,141,97,.12)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:BRAND}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}} });
+
+  const top = [...data].sort((a,b)=>b.reach-a.reach).slice(0,5);
+  if (charts.topMentions) charts.topMentions.destroy();
+  charts.topMentions = new Chart(document.getElementById('chartTopMentions'), { type:'bar', data:{labels:top.map(m=>m.account),datasets:[{data:top.map(m=>m.reach),backgroundColor:BRAND,borderRadius:4,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true},y:{grid:{display:false}}}} });
+}
+
+/* ───────────────────────────────────────────────
+   TAB-NAVIGATION
+   ─────────────────────────────────────────────── */
+function switchTab(tab) {
+  currentTab = tab;   // [FIX] Tab-State tracken
+  document.querySelectorAll('.tab').forEach(t => {
+    const active = t.dataset.tab === tab;
+    t.classList.toggle('active', active);
+    t.setAttribute('aria-selected', active);
+    t.setAttribute('tabindex', active ? '0' : '-1');
+  });
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
+
+  // [FIX] Charts beim Tab-Wechsel neu rendern (Chart.js 0×0 Bug in hidden Tabs)
+  if (tab === 'pipeline') {
+    renderCharts();
+  } else if (tab === 'monitoring') {
+    renderMonitoringCharts();
+  }
+}
+
+function tabKey(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    switchTab(e.target.dataset.tab);
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    const tabs = [...document.querySelectorAll('.tab')];
+    const idx = tabs.indexOf(e.target);
+    const next = e.key === 'ArrowRight' ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
+    tabs[next].focus();
+    switchTab(tabs[next].dataset.tab);
+  }
+}
+
+/* ───────────────────────────────────────────────
+   INIT
+   ─────────────────────────────────────────────── */
+loadAllData();
+</script>
+</body>
+</html>
