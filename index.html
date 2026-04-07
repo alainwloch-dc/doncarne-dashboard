@@ -240,18 +240,24 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
 </div>
 
 <div class="tab-content" id="tab-monitoring" role="tabpanel">
+  <div class="kpi-bar" style="border-bottom:none;padding-bottom:8px">
+    <div class="kpi-card accent" style="grid-column:span 3"><div class="kpi-label">Postings (gefiltert)</div><div class="kpi-value" id="kpiPostings">–</div><div class="kpi-sub" id="kpiPostingsSub"></div></div>
+    <div class="kpi-card" style="grid-column:span 3"><div class="kpi-label">Reichweite/Views gesamt</div><div class="kpi-value" id="kpiReach">–</div><div class="kpi-sub" id="kpiReachSub"></div></div>
+  </div>
   <div class="monitoring-header">
     <select class="filter-select" id="monitorPlatform" aria-label="Filter nach Plattform" onchange="applyMonitorFilters()"><option value="">Plattform</option><option>Instagram</option><option>TikTok</option><option>Web</option></select>
-    <select class="filter-select" id="monitorTime" aria-label="Filter nach Zeitraum" onchange="applyMonitorFilters()"><option value="">Zeitraum</option><option value="7">Letzte 7 Tage</option><option value="30">Letzte 30 Tage</option></select>
+    <select class="filter-select" id="monitorTime" aria-label="Filter nach Zeitraum" onchange="applyMonitorFilters()"><option value="">Zeitraum</option><option value="7">Letzte 7 Tage</option><option value="30">Letzte 30 Tage</option><option value="90">Letzte 90 Tage</option></select>
+    <select class="filter-select" id="monitorStandort" aria-label="Filter nach Standort" onchange="applyMonitorFilters()"><option value="">Standort</option><option value="bochum">Bochum</option><option value="oberhausen">Oberhausen</option><option value="hamburg">Hamburg</option><option value="düsseldorf">Düsseldorf</option><option value="ruhrpark">Ruhr Park</option><option value="centro">Centro</option><option value="carlsplatz">Carlsplatz</option></select>
     <input type="text" class="filter-search" id="monitorSearch" aria-label="Account suchen" placeholder="Account suchen..." style="max-width:220px" oninput="debouncedMonitorFilter()">
+    <select class="filter-select" id="monitorSort" aria-label="Sortierung" onchange="applyMonitorFilters()"><option value="date-desc">Datum ↓</option><option value="date-asc">Datum ↑</option><option value="reach-desc">Reichweite/Views ↓</option><option value="reach-asc">Reichweite/Views ↑</option><option value="likes-desc">Likes ↓</option><option value="likes-asc">Likes ↑</option></select>
   </div>
   <div class="monitoring-charts">
     <div class="chart-card"><div class="chart-title">Mentions-Timeline</div><div class="chart-wrap"><canvas id="chartMentions"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">Top Mentions nach Reichweite</div><div class="chart-wrap"><canvas id="chartTopMentions"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">Top Mentions nach Reichweite/Views</div><div class="chart-wrap"><canvas id="chartTopMentions"></canvas></div></div>
   </div>
   <div class="mention-list">
     <table class="mention-table">
-      <thead><tr><th>Account</th><th>Plattform</th><th>Follower</th><th>Typ</th><th>Hashtags</th><th>Views/Likes</th><th>Reichweite</th><th>Datum</th><th>Link</th><th>Pipeline?</th></tr></thead>
+      <thead><tr><th>Account</th><th>Plattform</th><th>Follower</th><th>Typ</th><th>Hashtags</th><th>Likes</th><th>Reichweite/Views</th><th>Datum</th><th>Link</th><th>Pipeline?</th></tr></thead>
       <tbody id="mentionBody"><tr><td colspan="10" class="loading"><div class="loading-spinner"></div>Laden...</td></tr></tbody>
     </table>
   </div>
@@ -385,8 +391,8 @@ function parseMon(r) {
     followers: safeInt(r.followers || r.Follower || '0'),
     postType: r.post_type || r['Post-Typ'] || '',
     hashtags: r.hashtags || r.Hashtags || '',
-    likes: safeInt(r.likes || r['Views/Likes'] || '0'),
-    reach: safeInt(r.reichweite || r.Reichweite || '0'),
+    likes: safeInt(r.Likes || r.likes || r['Views/Likes'] || '0'),
+    reach: safeInt(r['Reichweite/Views'] || r.reichweite || r.Reichweite || '0'),
     date: r.datum || r.Datum || '',
     link: r.link || r.Link || '',
     inPipeline: (r.in_pipeline || r['In Pipeline?'] || '').toLowerCase()
@@ -568,17 +574,47 @@ function renderCharts() {
    ─────────────────────────────────────────────── */
 function applyMonitorFilters() {
   const p = document.getElementById('monitorPlatform').value, d = document.getElementById('monitorTime').value, s = document.getElementById('monitorSearch').value.toLowerCase().trim();
+  const sort = document.getElementById('monitorSort').value;
+  const standort = document.getElementById('monitorStandort').value;
   filteredMentions = allMentions.filter(m => {
     if (p && m.platform !== p) return false;
     if (d) { const c = new Date(); c.setDate(c.getDate()-parseInt(d, 10)); if (parseDeDate(m.date)<c) return false; }
+    if (standort) { const h = (m.hashtags + ' ' + m.account).toLowerCase(); if (!h.includes(standort)) return false; }
     if (s && !m.account.toLowerCase().includes(s)) return false;
     return true;
   });
+
+  // Sortierung
+  filteredMentions.sort((a, b) => {
+    if (sort === 'date-desc') return parseDeDate(b.date) - parseDeDate(a.date);
+    if (sort === 'date-asc') return parseDeDate(a.date) - parseDeDate(b.date);
+    if (sort === 'reach-desc') return b.reach - a.reach;
+    if (sort === 'reach-asc') return a.reach - b.reach;
+    if (sort === 'likes-desc') return b.likes - a.likes;
+    if (sort === 'likes-asc') return a.likes - b.likes;
+    return parseDeDate(b.date) - parseDeDate(a.date);
+  });
+
+  updateMonitoringKPIs();
   renderMentionTable();
   // [FIX] Nur Monitoring-Charts rendern wenn Monitoring-Tab aktiv
   if (currentTab === 'monitoring') {
     renderMonitoringCharts();
   }
+}
+
+function updateMonitoringKPIs() {
+  const data = filteredMentions;
+  const count = data.length;
+  const totalReach = data.reduce((s, m) => s + m.reach, 0);
+  const totalLikes = data.reduce((s, m) => s + m.likes, 0);
+  const igCount = data.filter(m => m.platform === 'Instagram').length;
+  const ttCount = data.filter(m => m.platform === 'TikTok').length;
+  const webCount = data.filter(m => m.platform === 'Web').length;
+  document.getElementById('kpiPostings').textContent = count;
+  document.getElementById('kpiPostingsSub').textContent = igCount + ' IG · ' + ttCount + ' TT · ' + webCount + ' Web';
+  document.getElementById('kpiReach').textContent = fmtNum(totalReach);
+  document.getElementById('kpiReachSub').textContent = fmtNum(totalLikes) + ' Likes gesamt';
 }
 
 function renderMentionTable() {
