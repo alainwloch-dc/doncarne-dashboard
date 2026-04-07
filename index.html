@@ -250,6 +250,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
     <select class="filter-select" id="monitorStandort" aria-label="Filter nach Standort" onchange="applyMonitorFilters()"><option value="">Standort</option><option value="bochum">Bochum</option><option value="oberhausen">Oberhausen</option><option value="hamburg">Hamburg</option><option value="düsseldorf">Düsseldorf</option><option value="ruhrpark">Ruhr Park</option><option value="centro">Centro</option><option value="carlsplatz">Carlsplatz</option></select>
     <input type="text" class="filter-search" id="monitorSearch" aria-label="Account suchen" placeholder="Account suchen..." style="max-width:220px" oninput="debouncedMonitorFilter()">
     <select class="filter-select" id="monitorSort" aria-label="Sortierung" onchange="applyMonitorFilters()"><option value="date-desc">Datum ↓</option><option value="date-asc">Datum ↑</option><option value="reach-desc">Reichweite/Views ↓</option><option value="reach-asc">Reichweite/Views ↑</option><option value="likes-desc">Likes ↓</option><option value="likes-asc">Likes ↑</option></select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-500);cursor:pointer;white-space:nowrap"><input type="checkbox" id="monitorShowIrrelevant" onchange="applyMonitorFilters()" style="cursor:pointer"> Irrelevante anzeigen</label>
   </div>
   <div class="monitoring-charts">
     <div class="chart-card"><div class="chart-title">Mentions-Timeline</div><div class="chart-wrap"><canvas id="chartMentions"></canvas></div></div>
@@ -395,7 +396,8 @@ function parseMon(r) {
     reach: safeInt(r['Reichweite/Views'] || r.reichweite || r.Reichweite || '0'),
     date: r.datum || r.Datum || '',
     link: r.link || r.Link || '',
-    inPipeline: (r.in_pipeline || r['In Pipeline?'] || '').toLowerCase()
+    inPipeline: (r.in_pipeline || r['In Pipeline?'] || '').toLowerCase(),
+    relevant: (r.Relevant || r.relevant || 'Ja')
   };
 }
 
@@ -576,7 +578,9 @@ function applyMonitorFilters() {
   const p = document.getElementById('monitorPlatform').value, d = document.getElementById('monitorTime').value, s = document.getElementById('monitorSearch').value.toLowerCase().trim();
   const sort = document.getElementById('monitorSort').value;
   const standort = document.getElementById('monitorStandort').value;
+  const showIrrelevant = document.getElementById('monitorShowIrrelevant').checked;
   filteredMentions = allMentions.filter(m => {
+    if (!showIrrelevant && m.relevant === 'Nein') return false;
     if (p && m.platform !== p) return false;
     if (d) { const c = new Date(); c.setDate(c.getDate()-parseInt(d, 10)); if (parseDeDate(m.date)<c) return false; }
     if (standort) { const h = (m.hashtags + ' ' + m.account).toLowerCase(); if (!h.includes(standort)) return false; }
@@ -620,7 +624,10 @@ function updateMonitoringKPIs() {
 function renderMentionTable() {
   const tb = document.getElementById('mentionBody');
   if (!filteredMentions.length) { tb.innerHTML = '<tr><td colspan="10" class="empty-state">Keine Mentions gefunden.</td></tr>'; return; }
-  tb.innerHTML = filteredMentions.map(m => '<tr><td><strong>' + esc(m.account) + '</strong></td><td>' + esc(m.platform) + '</td><td>' + fmtNum(m.followers) + '</td><td>' + esc(m.postType) + '</td><td style="font-size:11px;color:var(--gray-500)">' + esc(m.hashtags) + '</td><td>' + fmtNum(m.likes) + '</td><td><strong>' + fmtNum(m.reach) + '</strong></td><td>' + esc(m.date) + '</td><td>' + (m.link ? '<a href="' + esc(m.link) + '" target="_blank" rel="noopener">Öffnen ↗</a>' : '–') + '</td><td><span class="pipeline-badge ' + (m.inPipeline==='ja'?'yes':'no') + '">' + (m.inPipeline==='ja'?'Ja':'Nein') + '</span></td></tr>').join('');
+  tb.innerHTML = filteredMentions.map(m => {
+    const dim = m.relevant === 'Nein' ? ' style="opacity:.45"' : '';
+    return '<tr' + dim + '><td><strong>' + esc(m.account) + '</strong></td><td>' + esc(m.platform) + '</td><td>' + fmtNum(m.followers) + '</td><td>' + esc(m.postType) + '</td><td style="font-size:11px;color:var(--gray-500)">' + esc(m.hashtags) + '</td><td>' + fmtNum(m.likes) + '</td><td><strong>' + fmtNum(m.reach) + '</strong></td><td>' + esc(m.date) + '</td><td>' + (m.link ? '<a href="' + esc(m.link) + '" target="_blank" rel="noopener">Öffnen ↗</a>' : '–') + '</td><td><span class="pipeline-badge ' + (m.inPipeline==='ja'?'yes':'no') + '">' + (m.inPipeline==='ja'?'Ja':'Nein') + '</span></td></tr>';
+  }).join('');
 }
 
 function renderMonitoringCharts() {
