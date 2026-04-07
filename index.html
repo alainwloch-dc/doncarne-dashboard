@@ -6,7 +6,7 @@
 <meta name="description" content="Don Carne Influencer Management Dashboard">
 <meta name="theme-color" content="#1C1C1C">
 <title>Don Carne · Influencer Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.7/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%239A8D61'/><text x='50' y='68' text-anchor='middle' fill='white' font-size='48' font-weight='bold' font-family='sans-serif'>DC</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -589,29 +589,12 @@ function renderMentionTable() {
 
 function renderMonitoringCharts() {
   const data = filteredMentions;
-  const titleMentions = document.querySelector('#tab-monitoring .monitoring-charts .chart-card:first-child .chart-title');
-  const titleTop = document.querySelector('#tab-monitoring .monitoring-charts .chart-card:last-child .chart-title');
-
-  // Debug: zeige Datenstatus im Titel
-  if (titleMentions) titleMentions.textContent = 'MENTIONS-TIMELINE (' + (data ? data.length : 0) + ' Datenpunkte)';
-
-  if (!data || !data.length) {
-    if (titleMentions) titleMentions.textContent = 'MENTIONS-TIMELINE (keine Daten)';
-    return;
-  }
-
-  // Chart.js Verfügbarkeit prüfen
-  if (typeof Chart === 'undefined') {
-    if (titleMentions) titleMentions.textContent = 'FEHLER: Chart.js nicht geladen!';
-    return;
-  }
+  if (!data || !data.length || typeof Chart === 'undefined') return;
 
   try {
     const dc = {};
     data.forEach(m => { if (m.date) dc[m.date] = (dc[m.date]||0) + 1; });
     const sd = Object.keys(dc).sort((a,b) => parseDeDate(a)-parseDeDate(b));
-
-    if (titleMentions) titleMentions.textContent = 'MENTIONS-TIMELINE (' + sd.length + ' Tage, Chart.js v' + Chart.version + ')';
 
     const canvasMentions = document.getElementById('chartMentions');
     if (canvasMentions) {
@@ -620,8 +603,6 @@ function renderMonitoringCharts() {
     }
 
     const top = [...data].sort((a,b)=>b.reach-a.reach).slice(0,5);
-    if (titleTop) titleTop.textContent = 'TOP MENTIONS (' + top.length + ' Einträge)';
-
     const canvasTop = document.getElementById('chartTopMentions');
     if (canvasTop) {
       if (charts.topMentions) { charts.topMentions.destroy(); charts.topMentions = null; }
@@ -634,7 +615,6 @@ function renderMonitoringCharts() {
     }, 50);
 
   } catch(e) {
-    if (titleMentions) titleMentions.textContent = 'FEHLER: ' + e.message;
     console.error('Chart-Rendering Fehler:', e);
   }
 }
