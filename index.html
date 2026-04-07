@@ -589,13 +589,29 @@ function renderMentionTable() {
 
 function renderMonitoringCharts() {
   const data = filteredMentions;
-  if (!data || !data.length) return;
+  const titleMentions = document.querySelector('#tab-monitoring .monitoring-charts .chart-card:first-child .chart-title');
+  const titleTop = document.querySelector('#tab-monitoring .monitoring-charts .chart-card:last-child .chart-title');
+
+  // Debug: zeige Datenstatus im Titel
+  if (titleMentions) titleMentions.textContent = 'MENTIONS-TIMELINE (' + (data ? data.length : 0) + ' Datenpunkte)';
+
+  if (!data || !data.length) {
+    if (titleMentions) titleMentions.textContent = 'MENTIONS-TIMELINE (keine Daten)';
+    return;
+  }
+
+  // Chart.js Verfügbarkeit prüfen
+  if (typeof Chart === 'undefined') {
+    if (titleMentions) titleMentions.textContent = 'FEHLER: Chart.js nicht geladen!';
+    return;
+  }
 
   try {
-    // Mentions-Timeline
     const dc = {};
     data.forEach(m => { if (m.date) dc[m.date] = (dc[m.date]||0) + 1; });
     const sd = Object.keys(dc).sort((a,b) => parseDeDate(a)-parseDeDate(b));
+
+    if (titleMentions) titleMentions.textContent = 'MENTIONS-TIMELINE (' + sd.length + ' Tage, Chart.js v' + Chart.version + ')';
 
     const canvasMentions = document.getElementById('chartMentions');
     if (canvasMentions) {
@@ -603,21 +619,22 @@ function renderMonitoringCharts() {
       charts.mentions = new Chart(canvasMentions, { type:'line', data:{labels:sd,datasets:[{label:'Mentions',data:sd.map(d=>dc[d]),borderColor:BRAND,backgroundColor:'rgba(154,141,97,.12)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:BRAND}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}} });
     }
 
-    // Top Mentions nach Reichweite
     const top = [...data].sort((a,b)=>b.reach-a.reach).slice(0,5);
+    if (titleTop) titleTop.textContent = 'TOP MENTIONS (' + top.length + ' Einträge)';
+
     const canvasTop = document.getElementById('chartTopMentions');
     if (canvasTop) {
       if (charts.topMentions) { charts.topMentions.destroy(); charts.topMentions = null; }
       charts.topMentions = new Chart(canvasTop, { type:'bar', data:{labels:top.map(m=>m.account),datasets:[{data:top.map(m=>m.reach),backgroundColor:BRAND,borderRadius:4,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true},y:{grid:{display:false}}}} });
     }
 
-    // Force Chart.js to recalculate dimensions
     setTimeout(() => {
       if (charts.mentions) charts.mentions.resize();
       if (charts.topMentions) charts.topMentions.resize();
     }, 50);
 
   } catch(e) {
+    if (titleMentions) titleMentions.textContent = 'FEHLER: ' + e.message;
     console.error('Chart-Rendering Fehler:', e);
   }
 }
