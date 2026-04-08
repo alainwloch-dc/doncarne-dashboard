@@ -211,7 +211,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--dark);min-height:1
     <div class="filter-row">
       <select class="filter-select" id="filterPlatform" aria-label="Filter nach Plattform" onchange="applyFilters()"><option value="">Plattform</option><option>Instagram</option><option>TikTok</option></select>
       <select class="filter-select" id="filterScore" aria-label="Filter nach Score" onchange="applyFilters()"><option value="">Score</option><option value="8-10">Top-Picks (8–10)</option><option value="6-7">Gut (6–7)</option><option value="1-5">Niedrig (1–5)</option></select>
-      <select class="filter-select" id="filterFollower" aria-label="Filter nach Follower" onchange="applyFilters()"><option value="">Follower</option><option value="5000-10000">Micro (5–10k)</option><option value="10000-50000">Mid (10–50k)</option><option value="50000-9999999">Macro (50k+)</option></select>
+      <select class="filter-select" id="filterFollower" aria-label="Filter nach Follower" onchange="applyFilters()"><option value="">Follower</option><option value="1000-3000">Nano (1–3k)</option><option value="3000-10000">Micro (3–10k)</option><option value="10000-50000">Mid (10–50k)</option><option value="50000-9999999">Macro (50k+)</option></select>
       <select class="filter-select" id="filterStatus" aria-label="Filter nach Status" onchange="applyFilters()"><option value="">Status</option><option>offen</option><option>kontaktiert</option><option>abgelehnt</option><option>Kooperation</option></select>
       <select class="filter-select" id="filterNiche" aria-label="Filter nach Nische" onchange="applyFilters()"><option value="">Nische</option></select>
       <select class="filter-select" id="filterRegion" aria-label="Filter nach Region" onchange="applyFilters()"><option value="">Region</option></select>
@@ -492,7 +492,7 @@ function resetFilters() {
 
 function renderActiveTags(f) {
   const c = document.getElementById('activeFilters');
-  const t = [], lbl = { '8-10':'Top-Picks 8–10','6-7':'Gut 6–7','1-5':'Niedrig 1–5','5000-10000':'Micro','10000-50000':'Mid','50000-9999999':'Macro' };
+  const t = [], lbl = { '8-10':'Top-Picks 8–10','6-7':'Gut 6–7','1-5':'Niedrig 1–5','1000-3000':'Nano','3000-10000':'Micro','10000-50000':'Mid','50000-9999999':'Macro' };
   if (f.platform) t.push('<span class="filter-tag platform">' + esc(f.platform) + '</span>');
   if (f.score) t.push('<span class="filter-tag score">' + (lbl[f.score]||f.score) + '</span>');
   if (f.follower) t.push('<span class="filter-tag follower">' + (lbl[f.follower]||f.follower) + '</span>');
