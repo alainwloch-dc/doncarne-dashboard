@@ -635,14 +635,33 @@ function renderMonitoringCharts() {
   if (!data || !data.length || typeof Chart === 'undefined') return;
 
   try {
+    // Mentions pro Tag zählen
     const dc = {};
     data.forEach(m => { if (m.date) dc[m.date] = (dc[m.date]||0) + 1; });
-    const sd = Object.keys(dc).sort((a,b) => parseDeDate(a)-parseDeDate(b));
+    const dates = Object.keys(dc).sort((a,b) => parseDeDate(a)-parseDeDate(b));
+
+    // Alle Tage zwischen Start und Ende auffüllen (Lücken = 0)
+    const allDays = [];
+    const allCounts = [];
+    if (dates.length > 1) {
+      const start = parseDeDate(dates[0]);
+      const end = parseDeDate(dates[dates.length - 1]);
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        const label = cursor.toLocaleDateString('de-DE');
+        allDays.push(label);
+        allCounts.push(dc[label] || 0);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    } else {
+      allDays.push(...dates);
+      allCounts.push(...dates.map(d => dc[d]));
+    }
 
     const canvasMentions = document.getElementById('chartMentions');
     if (canvasMentions) {
       if (charts.mentions) { charts.mentions.destroy(); charts.mentions = null; }
-      charts.mentions = new Chart(canvasMentions, { type:'line', data:{labels:sd,datasets:[{label:'Mentions',data:sd.map(d=>dc[d]),borderColor:BRAND,backgroundColor:'rgba(154,141,97,.12)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:BRAND}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false}}}} });
+      charts.mentions = new Chart(canvasMentions, { type:'bar', data:{labels:allDays,datasets:[{label:'Mentions',data:allCounts,backgroundColor:BRAND,borderRadius:3,borderSkipped:false}]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{grid:{display:false},ticks:{maxTicksLimit:12}}}} });
     }
 
     const top = [...data].sort((a,b)=>b.reach-a.reach).slice(0,5);
